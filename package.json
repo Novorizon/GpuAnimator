@@ -1,0 +1,12 @@
+{
+  "name": "com.guanjinbiao.gpuanimator",
+  "displayName": "Gpu Animator",
+  "description": "Gpu Animator",
+  "version": "1.0.0r",
+  "unity": "2020.2",
+  "license": "MIT",
+  "author": {
+    "name": "Novorizon",
+    "email": "novorizon@hotmail.com"
+  }
+}

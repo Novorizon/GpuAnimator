@@ -1,5 +1,50 @@
 # GpuAnimator
 
+[中文使用文档](Documentation~/index.md) · [API](Documentation~/api.md) · [接入与对象池](Documentation~/integration.md) · [常见问题](Documentation~/troubleshooting.md)
+
+## 快速开始
+
+`main` 是独立的 GameObject/MonoBehaviour 版本；原 PureMVCFramework ECS 版本保留在 [`ecs` 分支](https://github.com/Novorizon/GpuAnimator/tree/ecs)。当前示例面向 Unity 2020.2+ 的 **Built-in Render Pipeline**。
+
+1. 在 Unity Package Manager 通过 Git URL 安装：`https://github.com/Novorizon/GpuAnimator.git#main`。
+2. 准备同一次烘焙得到的 prefab、材质、动画纹理和 `.bytes` 元数据，具体目录和烘焙步骤见[入门指南](Documentation~/getting-started.md)。
+3. 资源由业务或 Framework 加载，播放器接收已配置的 Renderer 和解析后的数据：
+
+```csharp
+// loadedData、instance、renderer、clipName 均由调用方提供。
+// 数据解析一次后，可以供同一模型的多个实例共享。
+var sharedData = GpuSkinningAnimData.FromBytes(loadedData.bytes);
+var player = instance.GetComponent<GpuAnimator>();
+if (player == null)
+    player = instance.AddComponent<GpuAnimator>();
+
+player.AutomaticUpdate = true;
+if (player.Initialize(renderer, sharedData))
+    player.TryPlay(clipName);
+```
+
+## 可导入示例
+
+在 **Window → Package Manager → Gpu Animator → Samples** 中点击 Import。示例提供脚本和操作说明，需要使用你自己的匹配烘焙资源；仓库未附带角色模型或演示场景。
+
+| 示例 | 内容 | 操作说明 |
+| --- | --- | --- |
+| Basic Playback | Inspector 注入资源，循环播放、单次动作与完成回调 | [README](Samples~/BasicPlayback/README.md) |
+| Manual Crowd | 共享数据和材质，集中调用手动 Tick，管理示例实例 | [README](Samples~/ManualCrowd/README.md) |
+
+导入后按示例 README 配置字段，进入 Play Mode，通过组件右上角菜单执行示例操作。动画名称由 Inspector 或业务代码提供。
+
+## 中文文档
+
+- [文档首页](Documentation~/index.md)
+- [安装、烘焙和首次播放](Documentation~/getting-started.md)
+- [完整 API 与状态说明](Documentation~/api.md)
+- [Framework 接入、资源生命周期、对象池及手动更新](Documentation~/integration.md)
+- [故障排查和当前设计约束](Documentation~/troubleshooting.md)
+- [更新记录](CHANGELOG.md)
+
+---
+
 `main` provides a standalone GameObject/MonoBehaviour player. It depends only on
 Unity and does not load assets or require an ECS framework. The previous
 PureMVCFramework entity/component implementation is preserved on the

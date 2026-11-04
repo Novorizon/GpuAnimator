@@ -2,7 +2,7 @@
   "name": "com.guanjinbiao.gpuanimator",
   "displayName": "Gpu Animator",
   "description": "Standalone GPU animation for GameObjects with caller-supplied assets",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "unity": "2020.2",
   "documentationUrl": "https://github.com/Novorizon/GpuAnimator/blob/main/Documentation~/index.md",
   "license": "MIT",

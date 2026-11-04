@@ -34,6 +34,7 @@ Shader "Custom/GpuSkinningAnimationPBR"
         {
             CGPROGRAM
 
+            #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instancing
@@ -154,11 +155,11 @@ Shader "Custom/GpuSkinningAnimationPBR"
 
 
 
-            float4 indexToUV(float index)
+            float4 indexToUV(int index)
             {
-                int iIndex = trunc(index + 0.5);
-                int row = (int) (iIndex / _AnimationTexSize.x);
-                float col = iIndex - row * _AnimationTexSize.x;
+                int width = (int)_AnimationTexSize.x;
+                int row = index / width;
+                int col = index - row * width;
                 return float4((col + 0.5) / _AnimationTexSize.x, (row + 0.5) / _AnimationTexSize.y, 0, 0);
             }
             
@@ -216,14 +217,14 @@ Shader "Custom/GpuSkinningAnimationPBR"
                 // 正在播放的动画
                 frameDataPixelIndex = ((_BoneNum * (FrameIndex)) * DEFAULT_PER_FRAME_BONE_DATASPACE);
                 // bone0
-                boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
-                boneUV5 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
-                boneUV6 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
-                boneUV7 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
-                boneUV8 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
+                boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                boneUV5 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
+                boneUV6 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
+                boneUV7 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
+                boneUV8 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
 
                 a = tex2Dlod(_AnimationTex, boneUV1);
                 b = tex2Dlod(_AnimationTex, boneUV2);
@@ -235,14 +236,14 @@ Shader "Custom/GpuSkinningAnimationPBR"
                 h = tex2Dlod(_AnimationTex, boneUV8);
                 float4x4 bone0_matrix = DualQuaternionToMatrix(ConvertColors2Halfs(a, b, c, d), ConvertColors2Halfs(e, f, g, h));
                 // bone1
-                boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
-                boneUV5 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
-                boneUV6 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
-                boneUV7 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
-                boneUV8 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
+                boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                boneUV5 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
+                boneUV6 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
+                boneUV7 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
+                boneUV8 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
                 
                 a = tex2Dlod(_AnimationTex, boneUV1);
                 b = tex2Dlod(_AnimationTex, boneUV2);
@@ -255,14 +256,14 @@ Shader "Custom/GpuSkinningAnimationPBR"
                 float4x4 bone1_matrix = DualQuaternionToMatrix(ConvertColors2Halfs(a, b, c, d), ConvertColors2Halfs(e, f, g, h));
                 
                 // bone2
-                boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
-                boneUV5 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
-                boneUV6 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
-                boneUV7 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
-                boneUV8 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
+                boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                boneUV5 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
+                boneUV6 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
+                boneUV7 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
+                boneUV8 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
                 
                 a = tex2Dlod(_AnimationTex, boneUV1);
                 b = tex2Dlod(_AnimationTex, boneUV2);
@@ -275,14 +276,14 @@ Shader "Custom/GpuSkinningAnimationPBR"
                 float4x4 bone2_matrix = DualQuaternionToMatrix(ConvertColors2Halfs(a, b, c, d), ConvertColors2Halfs(e, f, g, h));
                 
                 // bone3
-                boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
-                boneUV5 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
-                boneUV6 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
-                boneUV7 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
-                boneUV8 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
+                boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                boneUV5 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 4);
+                boneUV6 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 5);
+                boneUV7 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 6);
+                boneUV8 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 7);
                 
                 a = tex2Dlod(_AnimationTex, boneUV1);
                 b = tex2Dlod(_AnimationTex, boneUV2);
@@ -301,28 +302,28 @@ Shader "Custom/GpuSkinningAnimationPBR"
                 //frameDataPixelIndex = (_BoneNum * BlendFrameIndex * DEFAULT_PER_FRAME_BONE_DATASPACE) ;
 
                 //// bone0
-                //boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                //boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                //boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                //boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                //boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                //boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                //boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                //boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[0] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
                 //float4x4 bone0_matrix_blend = DualQuaternionToMatrix(convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV1), tex2Dlod(_AnimationTex, boneUV2)), convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV3), tex2Dlod(_AnimationTex, boneUV4)));
                 //// bone1
-                //boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                //boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                //boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                //boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                //boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                //boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                //boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                //boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[1] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
                 //float4x4 bone1_matrix_blend = DualQuaternionToMatrix(convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV1), tex2Dlod(_AnimationTex, boneUV2)), convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV3), tex2Dlod(_AnimationTex, boneUV4)));
                 //// bone2
-                //boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                //boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                //boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                //boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                //boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                //boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                //boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                //boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[2] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
                 //float4x4 bone2_matrix_blend = DualQuaternionToMatrix(convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV1), tex2Dlod(_AnimationTex, boneUV2)), convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV3), tex2Dlod(_AnimationTex, boneUV4)));
                 //// bone3
-                //boneUV1 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE);
-                //boneUV2 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
-                //boneUV3 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
-                //boneUV4 = indexToUV(frameDataPixelIndex + boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
+                //boneUV1 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE);
+                //boneUV2 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 1);
+                //boneUV3 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 2);
+                //boneUV4 = indexToUV(frameDataPixelIndex + (int)boneIndices[3] * DEFAULT_PER_FRAME_BONE_DATASPACE + 3);
                 //float4x4 bone3_matrix_blend = DualQuaternionToMatrix(convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV1), tex2Dlod(_AnimationTex, boneUV2)), convertColors2Halfs(tex2Dlod(_AnimationTex, boneUV3), tex2Dlod(_AnimationTex, boneUV4)));
                 
                 //float BlendProgress = UNITY_ACCESS_INSTANCED_PROP(Props, _BlendProgress);

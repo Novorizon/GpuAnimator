@@ -1,440 +1,222 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-public class GpuSkinningTools : EditorWindow
+public sealed class GpuSkinningTools : EditorWindow
 {
-    // 默认原始资源目录
     public static readonly string DEFAULT_FBX_PATH = "Assets/Artworks/GpuRole/";
-    // 默认新资源输出目录
     public static readonly string DEFAULT_OUTPUT_PATH = "Assets/Main/Prefabs/GpuRole/";
-
-    // 默认Shader名称
-    public static string DEFAULT_USE_SHADER_NAME = "Custom/GpuSkinningAnimation";
     public static readonly string DEFAULT_PBR_SHADER_NAME = "Custom/GpuSkinningAnimationPBR";
     public static readonly string DEFAULT_SHADER_NAME = "Custom/GpuSkinningAnimation";
-
-    // 默认存储数据文件名称后缀
-    static readonly string DEFAULT_SAVE_FILE_NAME = "_Data.bytes";
-
-    // 默认网格文件名称后缀
+    public static string DEFAULT_USE_SHADER_NAME = DEFAULT_SHADER_NAME;
     public static readonly string DEFAULT_SAVE_MESH_NAME = "_Mesh.asset";
-
-    // 默认prefab文件名称后缀
     public static readonly string DEFAULT_SAVE_PREFAB_NAME = "_DynPre.prefab";
-
-    // 默认material文件名称后缀
     public static readonly string DEFAULT_SAVE_MATERIAL_NAME = "_DynMat.mat";
-
-    // 默认原始material文件名称后缀
     public static readonly string DEFAULT_SAVE_DEFAULT_MATERIAL_NAME = "_Default_DynMat.mat";
 
-    // 默认主纹理名称
-    static readonly string DEFAULT_MAIN_TEX_NAME_POSTFIX = ".png";
+    private enum ShaderMode { Unlit, PBR }
+    private static readonly int[] TextureSizes = { 256, 512, 1024, 2048, 4096, 8192, 16384 };
+    private static readonly string[] TextureSizeLabels = { "256", "512", "1024", "2048", "4096", "8192", "16384" };
 
-    static string parentFolder;
+    [SerializeField] private string sourceDirectory = DEFAULT_FBX_PATH;
+    [SerializeField] private string outputDirectory = DEFAULT_OUTPUT_PATH;
+    [SerializeField] private ShaderMode shaderMode;
+    [SerializeField] private int maximumTextureSize = 2048;
+    private readonly List<ReportEntry> report = new List<ReportEntry>();
+    private Vector2 reportScroll;
+    private string summary;
+    private bool running;
 
-    // 生成类型
-    static private GpuSkinningGenerator.GenerateType generateType = GpuSkinningGenerator.GenerateType.PBR;
+    private sealed class ReportEntry
+    {
+        public string Message;
+        public MessageType Type;
+    }
 
-    // 日志路径
-    static string logPath = "";
-    // 原始路径
-    static string srcPath = "";
-    // 文件输出路径
-    static string savePath = "";
-    // 数据文件名
-    static string saveName = "";
-    // prefab
-    static string savePrefabName = "";
-    // material
-    static string saveMaterialName = "";
-
-    static string mainTexPath = "";
-    static string maskPath = "";
-    private static List<AnimationClip> m_clipList = new List<AnimationClip>();
-    private static List<Mesh> m_meshList = new List<Mesh>();
-    private static List<Material> m_materialList = new List<Material>();
-    private static List<GameObject> m_gameObjectList = new List<GameObject>();
-    // 子模型列表
-    static Dictionary<string, SkinnedMeshRenderer> skinnedMeshRenderersDict = new Dictionary<string, SkinnedMeshRenderer>();
-    static string[] skinnedMeshRendererNames = new string[0];
-    static int selectedSkinnedMeshRenderer = 0;
-
-
-
-    static GpuSkinningGenerator generator = new GpuSkinningGenerator();
-
-    //[MenuItem("Window/GpuSkinningTool")]
+    [MenuItem("GpuSkinning/Baker")]
     private static void ShowWindow()
     {
-        //parentFolder = Application.dataPath.Replace("Assets", "");
-        //var window = GetWindow<GpuSkinningInstTools>();
-        //window.minSize = new Vector2(600, 800);
-        //window.titleContent = new GUIContent("GpuSkinningInstTools");
-        //window.Show();
+        GpuSkinningTools window = GetWindow<GpuSkinningTools>();
+        window.titleContent = new GUIContent("GPU Animation Baker");
+        window.minSize = new Vector2(520, 420);
+        window.Show();
     }
-
-
-    public class Errors
-    {
-        public string file;
-        public List<string> formats = new List<string>();
-        public Errors(string f, List<string> list)
-        {
-            file = f;
-            formats = list;
-        }
-    }
-
-    static public List<Errors> errors = new List<Errors>();
-    static List<DirectoryInfo> directoryInfos = new List<DirectoryInfo>();
-
-    static public bool CheckFiles(DirectoryInfo dir, GameObject selectedFbx)
-    {
-        bool hasMesh = false;
-        bool hasAnim = false;
-
-        Dictionary<string, bool> needs = new Dictionary<string, bool>();
-        DirectoryInfo[] res = dir.GetDirectories("res");
-        FileInfo[] fileInfos = dir.GetFiles();
-        string name = dir.Name.ToLower();
-
-        needs.Add(name + ".fbx", false);
-        foreach (var file in fileInfos)
-        {
-            string f = file.Name.ToLower();
-            if (needs.ContainsKey(f))
-            {
-                needs[f] = true;
-            }
-        }
-
-        if (selectedFbx)
-        {
-            SkinnedMeshRenderer[] skinnedMeshRenderers = selectedFbx.GetComponentsInChildren<SkinnedMeshRenderer>();
-            for (int i = 0; i < skinnedMeshRenderers.Length; ++i)
-            {
-                if (skinnedMeshRenderers[i].name.Contains(dir.Name))
-                {
-                    hasMesh = true;
-                    break;
-                }
-            }
-        }
-
-        needs.Add(name + ".png", false);
-        needs.Add(name + ".mat", false);
-        if (res.Length > 0 && res[0].Name == "res")
-        {
-            fileInfos = res[0].GetFiles();
-            foreach (var file in fileInfos)
-            {
-                string f = file.Name.ToLower();
-                if (needs.ContainsKey(f))
-                {
-                    needs[f] = true;
-                }
-                if (file.Extension == ".anim")
-                {
-                    hasAnim = true;
-                }
-            }
-        }
-        List<string> files = new List<string>();
-        foreach (var need in needs)
-        {
-            if (need.Value == false)
-            {
-                files.Add(need.Key);
-            }
-            if (!hasMesh)
-            {
-                files.Add(name + ".mesh");
-            }
-            if (!hasAnim)
-            {
-                files.Add("animation");
-            }
-        }
-        if (files.Count > 0 || !hasAnim || !hasMesh)
-        {
-            Errors error = new Errors(dir.Name, files);
-            errors.Add(error);
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-
-    }
-
-
-    static public void Log()
-    {
-        logPath = "Assets/Resources/GPUSkinningLog.txt";
-        StringBuilder sb = new StringBuilder();
-        foreach (var error in errors)
-        {
-            sb.Append(error.file).Append("\n");
-            error.formats.ForEach(format =>
-            sb.Append(format).Append("\n")
-            );
-            sb.Append("\n\n");
-        }
-        StreamWriter streamWriter = new StreamWriter(logPath);
-        streamWriter.Write(sb.ToString());
-        streamWriter.Flush();
-        streamWriter.Close();
-        //File.WriteAllText(logPath, sb.ToString(), Encoding.UTF8);
-    }
-
 
     [MenuItem("GpuSkinning/No PBR")]
-    static private void GPUSkinning()
-    {
-        //GpuSkinningUtility.CreatFileHighPrecision();
-        DEFAULT_USE_SHADER_NAME = DEFAULT_SHADER_NAME;
-        generateType = GpuSkinningGenerator.GenerateType.None;
-        GenGPUSkinning();
-    }
+    public static void GPUSkinning() { BakeDefaults(ShaderMode.Unlit); }
 
     [MenuItem("GpuSkinning/PBR")]
-    static private void GenGPUSkinningPBR()
+    public static void GenGPUSkinningPBR() { BakeDefaults(ShaderMode.PBR); }
+
+    private static void BakeDefaults(ShaderMode mode)
     {
-        //GpuSkinningUtility.CreatFilePBR();
-        DEFAULT_USE_SHADER_NAME = DEFAULT_PBR_SHADER_NAME;
-        generateType = GpuSkinningGenerator.GenerateType.PBR;
-        GenGPUSkinning();
+        ShowWindow();
+        GpuSkinningTools window = GetWindow<GpuSkinningTools>();
+        window.sourceDirectory = DEFAULT_FBX_PATH;
+        window.outputDirectory = DEFAULT_OUTPUT_PATH;
+        window.shaderMode = mode;
+        window.maximumTextureSize = 2048;
+        window.RunBatch(false);
     }
 
-
-    //[MenuItem("GpuSkinning/GpuSkinningTool")]
-    static private void GenGPUSkinning()
+    private void OnGUI()
     {
-        count = 0;
-        parentFolder = Application.dataPath.Replace("Assets", "");
-
-        errors.Clear();
-        directoryInfos.Clear();
-
-        DirectoryInfo dirInfo = new DirectoryInfo(DEFAULT_FBX_PATH);
-        DirectoryInfo[] dirs = dirInfo.GetDirectories();
-        foreach (var dir in dirs)
+        EditorGUILayout.LabelField("GPU Animation Baker", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("Each source subfolder is one role. Validate samples every clip without saving assets. Bake writes the generated assets for each valid role.", MessageType.Info);
+        using (new EditorGUI.DisabledScope(running))
         {
-            //string fbxPath = dir.FullName.Substring(dir.FullName.IndexOf(DEFAULT_FBX_PATH) + DEFAULT_FBX_PATH.Length) + "/" + dir.Name;
-            //GameObject fbx = Resources.Load(fbxPath) as GameObject;
-            GameObject fbx = AssetDatabase.LoadAssetAtPath<GameObject>(DEFAULT_FBX_PATH + dir.Name + "/" + dir.Name + ".fbx");
-
-            bool isEnough = CheckFiles(dir, fbx);
-            if (!isEnough)
-            {
-                //Debug.Log("Lack of " + dir.Name);
-                continue;
-            }
-
-
-            GeResources(dir);
-            //GameObject fbxObject = Instantiate(fbx); ;
-            Generate(fbx);
-
+            DrawDirectoryField("Source directory", ref sourceDirectory);
+            DrawDirectoryField("Output directory", ref outputDirectory);
+            shaderMode = (ShaderMode)EditorGUILayout.EnumPopup("Shader", shaderMode);
+            maximumTextureSize = EditorGUILayout.IntPopup("Maximum texture size", maximumTextureSize, TextureSizeLabels, TextureSizes);
         }
-        EditorUtility.DisplayDialog("提示", "生成成功 " + count + "个", "OK");
-        //Log();
-
+        bool editorBusy = EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating;
+        if (editorBusy)
+            EditorGUILayout.HelpBox("Wait until the Editor has finished importing or compiling, and exit Play Mode before baking.", MessageType.Warning);
+        string pathError = GetDirectoryError();
+        if (pathError != null)
+            EditorGUILayout.HelpBox(pathError, MessageType.Error);
+        using (new EditorGUI.DisabledScope(running || editorBusy || pathError != null))
+        {
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Validate all roles")) RunBatch(true);
+            if (GUILayout.Button("Bake all roles")) RunBatch(false);
+            EditorGUILayout.EndHorizontal();
+        }
+        EditorGUILayout.Space();
+        if (!string.IsNullOrEmpty(summary))
+            EditorGUILayout.LabelField(summary, EditorStyles.wordWrappedLabel);
+        reportScroll = EditorGUILayout.BeginScrollView(reportScroll);
+        foreach (ReportEntry entry in report)
+            EditorGUILayout.HelpBox(entry.Message, entry.Type);
+        EditorGUILayout.EndScrollView();
     }
 
-
-    static int count = 0;
-    static private void Generate(GameObject selectedFbx)
+    private static void DrawDirectoryField(string label, ref string value)
     {
-        if (selectedFbx)
+        EditorGUILayout.BeginHorizontal();
+        value = EditorGUILayout.TextField(label, value);
+        if (GUILayout.Button("Browse", GUILayout.Width(65)))
         {
-            count++;
-            //Debug.Log(count);
-            selectedSkinnedMeshRenderer = 0;
-            srcPath = AssetDatabase.GetAssetPath(selectedFbx);
-            srcPath = srcPath.Substring(0, srcPath.LastIndexOf("/") + 1);
-            //savePath = srcPath + "Output/";
-            savePath = DEFAULT_OUTPUT_PATH + selectedFbx.name + "/";
-            saveName = selectedFbx.name + DEFAULT_SAVE_FILE_NAME;
-            // mesh list
-            skinnedMeshRenderersDict.Clear();
-            SkinnedMeshRenderer[] skinnedMeshRenderers = selectedFbx.GetComponentsInChildren<SkinnedMeshRenderer>();
-            skinnedMeshRendererNames = new string[skinnedMeshRenderers.Length];
-            for (int i = 0; i < skinnedMeshRenderers.Length; ++i)
+            string initialDirectory = Application.dataPath;
+            try
             {
-                skinnedMeshRendererNames[i] = skinnedMeshRenderers[i].name;
-                if (skinnedMeshRenderers[i].name.Contains(selectedFbx.name))
-                //if(skinnedMeshRenderers[i].name.Contains(selectedFbx.name)|| skinnedMeshRenderers[i].name.Contains("Body"))
+                string candidate = GpuAnimationBakeDiscovery.ToAbsolutePath(value);
+                if (Directory.Exists(candidate)) initialDirectory = candidate;
+            }
+            catch (ArgumentException) { }
+            string selection = EditorUtility.OpenFolderPanel(label, initialDirectory, string.Empty);
+            if (!string.IsNullOrEmpty(selection))
+            {
+                // Keep invalid selections visible so the path error explains why they cannot be used.
+                try { value = GpuAnimationBakeDiscovery.NormalizeAssetPath(selection); }
+                catch (ArgumentException) { value = selection; }
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private string GetDirectoryError()
+    {
+        try
+        {
+            GpuAnimationBakeDiscovery.ValidateDirectories(sourceDirectory, outputDirectory);
+            return null;
+        }
+        catch (Exception exception) { return exception.Message; }
+    }
+
+    private void RunBatch(bool validateOnly)
+    {
+        if (running) return;
+        report.Clear();
+        summary = null;
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating)
+        {
+            AddReport("The Editor must be idle and outside Play Mode before baking.", MessageType.Error);
+            return;
+        }
+        running = true;
+        int succeeded = 0;
+        int failed = 0;
+        int processed = 0;
+        bool cancelled = false;
+        bool couldNotStart = false;
+        List<GpuAnimationBakeCandidate> candidates = null;
+        string action = validateOnly ? "Validation" : "Bake";
+        try
+        {
+            string shaderName = shaderMode == ShaderMode.PBR ? DEFAULT_PBR_SHADER_NAME : DEFAULT_SHADER_NAME;
+            candidates = GpuAnimationBakeDiscovery.Discover(sourceDirectory, outputDirectory, shaderName, maximumTextureSize);
+            if (candidates.Count == 0)
+            {
+                AddReport("No role subfolders were found in " + GpuAnimationBakeDiscovery.NormalizeAssetPath(sourceDirectory) + ".", MessageType.Warning);
+                return;
+            }
+            for (int index = 0; index < candidates.Count; index++)
+            {
+                GpuAnimationBakeCandidate candidate = candidates[index];
+                int roleIndex = index;
+                try
                 {
-                    selectedSkinnedMeshRenderer = i;
-                    skinnedMeshRenderersDict.Add(skinnedMeshRendererNames[i], skinnedMeshRenderers[i]);
-
+                    if (EditorUtility.DisplayCancelableProgressBar("GPU Animation " + action, candidate.Name, (float)index / candidates.Count))
+                        throw new OperationCanceledException();
+                    if (!string.IsNullOrEmpty(candidate.Error))
+                        throw new InvalidOperationException(candidate.Error);
+                    using (GpuAnimationBakeResult result = GpuSkinningGenerator.Bake(candidate.Request, (progress, message) =>
+                        EditorUtility.DisplayCancelableProgressBar("GPU Animation " + action, candidate.Name + ": " + message,
+                            (roleIndex + Mathf.Clamp01(progress)) / candidates.Count)))
+                    {
+                        foreach (string warning in result.Warnings)
+                            AddReport(candidate.Name + ": " + warning, MessageType.Warning);
+                        string prefabPath = null;
+                        if (validateOnly)
+                            GpuAnimationAssetWriter.Validate(candidate.Request, result);
+                        else
+                            prefabPath = GpuAnimationAssetWriter.Save(candidate.Request, result);
+                        succeeded++;
+                        AddReport(candidate.Name + (validateOnly ? ": validation passed." : ": saved " + prefabPath), MessageType.Info);
+                    }
                 }
-            }
-
-            savePrefabName = selectedFbx.name + DEFAULT_SAVE_PREFAB_NAME;
-            saveMaterialName = selectedFbx.name + DEFAULT_SAVE_MATERIAL_NAME;
-
-            mainTexPath = srcPath + "res/" + selectedFbx.name + DEFAULT_MAIN_TEX_NAME_POSTFIX;
-            maskPath = srcPath + "res/" + selectedFbx.name + "_mask" + DEFAULT_MAIN_TEX_NAME_POSTFIX;
-
-            //mainTexPath = srcPath +  selectedFbx.name + DEFAULT_MAIN_TEX_NAME_POSTFIX;
-
-
-            //GetParts(selectedFbx);
-
-            refreshPanel(selectedFbx);
-            if (Directory.Exists(savePath))
-                Directory.Delete(savePath, true);
-            Directory.CreateDirectory(savePath);
-
-            //原始材质
-            string mainTex = savePath + selectedFbx.name + DEFAULT_MAIN_TEX_NAME_POSTFIX;
-            if (File.Exists(mainTexPath))
-            {
-                File.Copy(mainTexPath, mainTex, true);
-            }
-            string maskTex = savePath + selectedFbx.name + "_mask" + DEFAULT_MAIN_TEX_NAME_POSTFIX;
-            if (File.Exists(maskPath))
-            {
-                File.Copy(maskPath, maskTex, true);
-            }
-
-            // 骨骼动画
-            generator.generate(parentFolder, savePath, saveName, saveMaterialName, savePrefabName, mainTex, generateType, maskTex);
-        }
-    }
-
-
-    private static void GetParts(GameObject obj)
-    {
-        string assetPath = AssetDatabase.GetAssetPath(obj);
-        UnityEngine.Object[] objs = AssetDatabase.LoadAllAssetsAtPath(assetPath);
-        m_meshList.Clear();
-        m_clipList.Clear();
-        m_materialList.Clear();
-        m_gameObjectList.Clear();
-        for (int i = 0; i < objs.Length; i++)
-        {
-            if (objs[i].hideFlags == (HideFlags.HideInHierarchy | HideFlags.NotEditable))
-                continue;
-
-            if (objs[i] is Mesh)
-            {
-                m_meshList.Add(objs[i] as Mesh);
-            }
-            else if (objs[i] is Material)
-            {
-                m_materialList.Add(objs[i] as Material);
-            }
-            else if (objs[i] is AnimationClip)
-            {
-                m_clipList.Add(objs[i] as AnimationClip);
-            }
-            else if (objs[i] is GameObject)
-            {
-                m_gameObjectList.Add(objs[i] as GameObject);
-            }
-        }
-    }
-
-
-    private static void GetAnimClips(GameObject obj)
-    {
-        string assetPath = AssetDatabase.GetAssetPath(obj);
-        UnityEngine.Object[] objs = AssetDatabase.LoadAllAssetsAtPath(assetPath);
-        m_clipList.Clear();
-        for (int i = 0; i < objs.Length; i++)
-        {
-            if (objs[i] is AnimationClip)
-            {
-                if (objs[i].hideFlags == (HideFlags.HideInHierarchy | HideFlags.NotEditable))
-                    continue;
-
-                //if (!IslegalString(objs[i].name))
-                //{
-                //    string strLog = string.Format("AnimationCLip  命名错误: {0} -> {1}", assetPath, objs[i].name);
-                //    Debug.Log("命名错误", strLog);
-                //}
-
-                m_clipList.Add(objs[i] as AnimationClip);
-            }
-        }
-    }
-
-    private static void GeResources(DirectoryInfo dir)
-    {
-        m_clipList.Clear();
-        string animPath = DEFAULT_FBX_PATH + dir.Name + "/res/";
-        DirectoryInfo[] res = dir.GetDirectories("res");
-        FileInfo[] fileInfos = dir.GetFiles();
-        if (res.Length > 0 && res[0].Name == "res")
-        {
-            FileInfo[] fileres = res[0].GetFiles();
-            foreach (var file in fileres)
-            {
-                if (file.Extension.Equals(".anim"))
+                catch (OperationCanceledException)
                 {
-                    AnimationClip clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(animPath + file.Name);
-                    if (clip.hideFlags == (HideFlags.HideInHierarchy | HideFlags.NotEditable))
-                        continue;
-                    m_clipList.Add(clip);
-                    //Debug.Log(clip.name);
+                    cancelled = true;
+                    AddReport(action + " cancelled at " + candidate.Name + ". Completed roles are preserved.", MessageType.Warning);
+                    break;
                 }
-                else if (file.Extension.Equals(".mat"))
+                catch (Exception exception)
                 {
-                    Material mat = AssetDatabase.LoadAssetAtPath<Material>(animPath + file.Name);
-                    if (mat.hideFlags == (HideFlags.HideInHierarchy | HideFlags.NotEditable))
-                        continue;
-                    m_materialList.Add(mat);
-                    //Debug.Log(mat.name);
+                    failed++;
+                    AddReport(candidate.Name + ": " + exception.Message, MessageType.Error);
                 }
-                else if (file.Name.Equals(dir.Name + ".png"))//mainTex
-                {
-                    //Material mat = AssetDatabase.LoadAssetAtPath<Material>(animPath + file.Name);
-                    //if (mat.hideFlags == (HideFlags.HideInHierarchy | HideFlags.NotEditable))
-                    //	continue;
-                    //m_materialList.Add(mat);
-                    //Debug.Log(mat.name);
-                }
+                processed++;
             }
         }
-    }
-    static private void refreshPanel(GameObject selectedFbx)
-    {
-        //GetAnimClips(selectedFbx);
-        generator.setSelectedModel(selectedFbx, generateType, m_clipList, skinnedMeshRenderersDict[skinnedMeshRendererNames[selectedSkinnedMeshRenderer]], m_meshList);
-    }
-
-
-    static public void AnimationClipState(AnimationClip clip, AnimationClipData boneAnimation)
-    {
-        string path = "Assets/Resources/animClipState.txt";
-        StringBuilder sb = new StringBuilder(128);
-        sb.Append(clip.name).Append("\n");
-        sb.Append(clip.frameRate).Append("\n");
-        sb.Append(clip.length).Append("\n");
-        sb.Append(clip.isLooping).Append("\n");
-        sb.Append(boneAnimation.startFrame).Append("\n");
-        sb.Append(boneAnimation.endFrame).Append("\n");
-        sb.Append("\n\n");
-
-        using (StreamWriter sw = File.AppendText(path))
+        catch (Exception exception)
         {
-            sw.WriteLine(sb.ToString());
-            sw.Flush();
-            sw.Close();
+            couldNotStart = true;
+            AddReport(action + " could not start: " + exception.Message, MessageType.Error);
         }
-        //StreamWriter streamWriter = new StreamWriter(path);
-        //streamWriter.Write(sb.ToString());
-        //streamWriter.Flush();
-        //streamWriter.Close();
-        //File.WriteAllText(logPath, sb.ToString(), Encoding.UTF8);
+        finally
+        {
+            EditorUtility.ClearProgressBar();
+            running = false;
+            int remaining = candidates == null ? 0 : candidates.Count - processed;
+            summary = couldNotStart ? action + " could not start. See the error above." :
+                action + ": " + succeeded + " succeeded, " + failed + " failed" +
+                (cancelled ? ", " + remaining + " not completed (cancelled)." : ".");
+            Debug.Log("[GpuAnimator] " + summary);
+            Repaint();
+        }
     }
 
+    private void AddReport(string message, MessageType type)
+    {
+        report.Add(new ReportEntry { Message = message, Type = type });
+        if (type == MessageType.Error) Debug.LogError("[GpuAnimator] " + message);
+        else if (type == MessageType.Warning) Debug.LogWarning("[GpuAnimator] " + message);
+        else Debug.Log("[GpuAnimator] " + message);
+    }
 }

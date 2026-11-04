@@ -2,6 +2,10 @@
 
 [中文使用文档](Documentation~/index.md) · [API](Documentation~/api.md) · [接入与对象池](Documentation~/integration.md) · [常见问题](Documentation~/troubleshooting.md)
 
+[美术资源规范与交付清单](Documentation~/art-guidelines.md)：模型、骨骼权重、动画、贴图、目录约定和烘焙验收。
+
+[编辑器测试与项目验收](Documentation~/editor-testing.md)：启用包内 EditMode 测试，检查重烘焙引用、导入和失败恢复。当前 Shader 使用 Shader Model 3.5。
+
 ## 快速开始
 
 `main` 是独立的 GameObject/MonoBehaviour 版本；原 PureMVCFramework ECS 版本保留在 [`ecs` 分支](https://github.com/Novorizon/GpuAnimator/tree/ecs)。当前示例面向 Unity 2020.2+ 的 **Built-in Render Pipeline**。
@@ -9,7 +13,7 @@
 3.0 使用完整的数据类型名 `AnimationData` 和 `AnimationClipData`；组件入口仍为 `GpuAnimator`。从 2.x 升级请替换源码中的旧类型名，`AnimationData.FromBytes` 可以读取旧元数据，见[命名迁移说明](Documentation~/integration.md#从-2x-迁移数据类型名称)。
 
 1. 在 Unity Package Manager 通过 Git URL 安装：`https://github.com/Novorizon/GpuAnimator.git#main`。
-2. 准备同一次烘焙得到的 prefab、材质、动画纹理和 `.bytes` 元数据，具体目录和烘焙步骤见[入门指南](Documentation~/getting-started.md)。
+2. 按[美术规范](Documentation~/art-guidelines.md)准备模型与动画，在 **GpuSkinning → Baker** 中先 Validate 再 Bake；产物与接入步骤见[入门指南](Documentation~/getting-started.md)。
 3. 资源由业务或 Framework 加载，播放器接收已配置的 Renderer 和解析后的数据：
 
 ```csharp
@@ -40,6 +44,7 @@ if (player.Initialize(renderer, sharedData))
 
 - [文档首页](Documentation~/index.md)
 - [安装、烘焙和首次播放](Documentation~/getting-started.md)
+- [美术资源规范与交付清单](Documentation~/art-guidelines.md)
 - [完整 API 与状态说明](Documentation~/api.md)
 - [Framework 接入、资源生命周期、对象池及手动更新](Documentation~/integration.md)
 - [故障排查和当前设计约束](Documentation~/troubleshooting.md)

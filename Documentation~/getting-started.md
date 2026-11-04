@@ -8,21 +8,20 @@
 https://github.com/Novorizon/GpuAnimator.git#main
 ```
 
-项目应使用 Built-in Render Pipeline。包内运行时和 Editor 代码已有独立程序集；`main` 不需要 PureMVCFramework。若调用代码自身使用 asmdef，请为它添加对 `GpuAnimator` 程序集的引用。
+项目应使用 Built-in Render Pipeline。包内 Shader 使用 `#pragma target 3.5`，目标图形 API 和 GPU 需支持相应的整数运算和实例化能力。包内运行时和 Editor 代码已有独立程序集；`main` 不需要 PureMVCFramework。若调用代码自身使用 asmdef，请为它添加对 `GpuAnimator` 程序集的引用。
 
 已有 ECS 项目可以改用 `#ecs`，但其 API 和依赖与本文不同，见[分支说明](index.md#分支与版本)。
 
 ## 准备原始资源
 
-当前菜单工具会扫描 `Assets/Artworks/GpuRole/` 下的每个角色目录。以角色 `Hero` 为例，目录必须为：
+打开 **GpuSkinning > Baker**，可以配置源目录和输出目录。默认源目录为 `Assets/Artworks/GpuRole/`，工具扫描它的每个直接角色子目录。以角色 `Hero` 为例：
 
 ```text
 Assets/Artworks/GpuRole/
 └── Hero/
-    ├── Hero.fbx
+    ├── Character.fbx           # 恰好一个 FBX，文件名不限
     └── res/
         ├── Hero.png
-        ├── Hero.mat
         ├── Hero_mask.png       # 可选
         ├── Idle.anim
         └── Walk.anim
@@ -30,26 +29,24 @@ Assets/Artworks/GpuRole/
 
 这里的 `Idle`、`Walk` 仅为文件示例，播放器没有内置这些名称。运行时使用的是 `AnimationClip.name`，请按项目实际 Clip 名称播放。
 
-当前工具的输入约定：
-
-- 角色目录名、FBX 名和主贴图/材质名保持一致，建议大小写完全一致；目录名必须准确为 `res`，动画扩展名使用小写 `.anim`。
-- `res/<Role>.png`、`res/<Role>.mat` 和至少一个 `.anim` 为现有检查逻辑的必需文件。即使 FBX 内嵌了动画，也需要将用于烘焙的动画准备成 `res` 中的 `.anim`。
-- FBX 的激活层级中至少有一个对象带 `SkinnedMeshRenderer`（可位于根对象），且该对象名称包含角色名，例如 `Hero_Body`。禁用的 Renderer 组件仍会被检索；此处 `Contains` 匹配区分大小写，Renderer 的 `rootBone` 和骨骼绑定也必须有效。
-- 当前实现只导出选中的一个 SkinnedMeshRenderer；有多个名称匹配时会选择遍历中的最后一个，不会自动合并身体、头发或装备。建议先准备单 SMR、单 submesh 的输入。
-- 骨骼使用统一缩放，即同一骨骼 X/Y/Z 缩放一致；顶点使用最多四个骨骼权重。名称避免空格和中文，以满足现有生成器的命名检查。
-
-输入 `.mat` 会参与资源检查和读取，但输出材质由工具重新创建，不会完整复制输入材质的属性。
+输入必须包含 `res/<Role>.png` 和至少一个独立 `.anim`，不再要求输入 `.mat`。角色中的 FBX 文件名、SMR 节点名不必包含角色名；FBX 中必须恰好一个 SMR 和一个 submesh，并具备有效的骨骼、bindposes、四权重、法线和 UV0。模型变换还需满足统一缩放数据格式。详细的制作要求与交付验收见[美术资源规范](art-guidelines.md)。
 
 ## 烘焙
 
-在 Unity 顶部菜单选择其中一项：
+建议通过 **GpuSkinning > Baker** 执行：
+
+1. 设置位于本项目 `Assets/` 内的源目录和输出目录，二者不能相同或互相包含；源目录需存在，输出目录可以尚未创建。选择 Unlit/PBR。最大动画纹理尺寸默认 `2048`，可选 `256` 到 `16384` 的二次幂；需结合目标平台能力设置。
+2. 退出 Play 模式，等待资源导入和脚本编译结束，再执行 **Validate all roles**。工具会扫描全部角色、完整采样并预检输出文件、PNG、Shader 和材质属性，但不保存烘焙输出；逐角色查看结果，修正输入错误。
+3. 执行 **Bake all roles**。角色失败时报告原因并继续其他角色；取消批处理会保留已成功保存的角色。窗口显示逐角色结果与汇总，并同步输出到 Console；不会另外生成报告文件。
+
+原快捷菜单继续使用默认源目录和 `Assets/Main/Prefabs/GpuRole/` 输出目录，直接开始批量烘焙：
 
 | 菜单 | 输出材质使用的 Shader |
 | --- | --- |
 | **GpuSkinning > No PBR** | `Custom/GpuSkinningAnimation` |
 | **GpuSkinning > PBR** | `Custom/GpuSkinningAnimationPBR` |
 
-每次执行会扫描全部角色目录，不仅处理当前选中的对象。工具在生成每个角色前会删除并重建已有的 `Assets/Main/Prefabs/GpuRole/<Role>/` 输出目录；请把自己维护的额外材质、prefab 变体等放在其他目录，避免重新烘焙时被替换。
+上述操作处理扫描到的全部角色，不使用 Project 窗口当前选择。先用一个角色验证流程，再放入完整角色集合。Validate 也需要逐帧采样，大量角色或长动画可能耗时。
 
 以 `Hero` 为例，输出为：
 
@@ -59,7 +56,7 @@ Assets/Main/Prefabs/GpuRole/Hero/
 ├── Hero_DynMat.mat
 ├── Hero_Data.bytes
 ├── Hero_Data.png
-├── <原始 sharedMesh.name>_Mesh.asset
+├── Hero_Mesh.asset
 ├── Hero.png
 └── Hero_mask.png               # 输入存在时复制
 ```
@@ -70,10 +67,14 @@ Assets/Main/Prefabs/GpuRole/Hero/
 | `Hero_DynMat.mat` | 已配置动画 PNG、`_BoneNum`、`_AnimationTexSize`，并开启 Instancing |
 | `Hero_Data.png` | GPU 读取的逐帧骨骼数据纹理；不是角色主贴图 |
 | `Hero_Data.bytes` | 可按 TextAsset 加载的序列化元数据；由 `FromBytes` 解码 |
-| `<sharedMesh.name>_Mesh.asset` | 保存网格及 UV 通道中的骨骼索引、权重；文件名取自原始 Mesh，未必等于角色名 |
+| `Hero_Mesh.asset` | 保存网格、覆盖动画的 bounds，以及 UV 通道中的骨骼索引和权重 |
 | `Hero.png` / `Hero_mask.png` | 复制的主贴图及可选遮罩 |
 
-prefab 不会自动加载 `.bytes` 或开始播放。使用 PBR 输出时，应结合项目灯光和材质需要配置其余属性，例如 LUT；工具只绑定它负责生成的资源。
+重新烘焙不再删除整个角色输出目录。工具会准备好单角色数据后再写入，失败时回滚该角色本次写入，并保留已有资源的 GUID。已有输出 prefab 引用输出目录内独立的 Mesh `.asset` 时，沿用该 Mesh 路径；因此升级后的 Mesh 文件名可能仍为旧名称。其余输出名不变。
+
+已有输出材质会更新工具负责的 Shader、贴图和动画尺寸等字段，并保留其他材质属性。生成 prefab 不会自动加载 `.bytes` 或开始播放。PBR 所需的 LUT 等项目设置由调用方配置；自定义 prefab 行为建议放在包装对象或 Variant 中。
+
+升级到 3.1 不会自动改写已有资源。要获得新的非循环末帧采样和动画 bounds，需要重新烘焙整套角色资源；运行时公开 API 与数据字段保持不变。
 
 ## 首次播放
 

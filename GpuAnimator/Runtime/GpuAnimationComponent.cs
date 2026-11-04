@@ -13,6 +13,8 @@ using UnityEngine;
 
             public int currentFrame = 0;
             public int lastFrame = 0;
+            public bool completed;
+            public bool loop;
 
             public Action<Entity, object> callback;
             public object userdata;
@@ -20,7 +22,8 @@ using UnityEngine;
 
         public GpuSkinningAnimClip[] clips;
         public MaterialPropertyBlock prop;
-        public AnimationClip current;
+        internal Renderer renderer;
+        public AnimationClip current = new AnimationClip();
 
         public float duration = 0.03f;
         public float timer = 0;
@@ -30,7 +33,8 @@ using UnityEngine;
         {
             clips = null;
             prop = null;
-            current = null;
+            renderer = null;
+            current = new AnimationClip();
             duration = 0;
             timer = 0;
         }

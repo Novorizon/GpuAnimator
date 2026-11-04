@@ -354,9 +354,9 @@ public class GpuSkinningGenerator
                     float sx = Mathf.Floor(scale.x * 100.0f);
                     float sy = Mathf.Floor(scale.y * 100.0f);
                     float sz = Mathf.Floor(scale.z * 100.0f);
-                    if ((sx - sy) > 5.0f
-                        || (sx - sz) > 5.0f
-                        || (sy - sz) > 5.0f)
+                    if (Mathf.Abs(sx - sy) > 5.0f
+                        || Mathf.Abs(sx - sz) > 5.0f
+                        || Mathf.Abs(sy - sz) > 5.0f)
                     {
                         Transform remapBone = null;
                         foreach (var key in boneIds.Keys)
@@ -382,7 +382,7 @@ public class GpuSkinningGenerator
                     Color color3 = convertFloat16Bytes2Color(convertFloat32toFloat16Bytes(matrix.GetColumn(3).x), convertFloat32toFloat16Bytes(matrix.GetColumn(3).y));
                     tex2D.SetPixel(pixelUv.x, pixelUv.y, color3);
                     pixelUv = convertPixel2UV(pixelIdx++);
-                    Color color4 = convertFloat16Bytes2Color(convertFloat32toFloat16Bytes(matrix.GetColumn(3).z), convertFloat32toFloat16Bytes(Mathf.Clamp01(matrix.lossyScale.magnitude)));
+                    Color color4 = convertFloat16Bytes2Color(convertFloat32toFloat16Bytes(matrix.GetColumn(3).z), convertFloat32toFloat16Bytes(scale.x));
                     tex2D.SetPixel(pixelUv.x, pixelUv.y, color4);
 
                 }
@@ -444,9 +444,9 @@ public class GpuSkinningGenerator
                     float sx = Mathf.Floor(scale.x * 100.0f);
                     float sy = Mathf.Floor(scale.y * 100.0f);
                     float sz = Mathf.Floor(scale.z * 100.0f);
-                    if ((sx - sy) > 5.0f
-                        || (sx - sz) > 5.0f
-                        || (sy - sz) > 5.0f)
+                    if (Mathf.Abs(sx - sy) > 5.0f
+                        || Mathf.Abs(sx - sz) > 5.0f
+                        || Mathf.Abs(sy - sz) > 5.0f)
                     {
                         Transform remapBone = null;
                         foreach (var key in boneIds.Keys)
@@ -468,7 +468,7 @@ public class GpuSkinningGenerator
                     Color color5 = Float32Bytes2Color(Float32toFloat32Bytes(matrix.GetColumn(3).x));
                     Color color6 = Float32Bytes2Color(Float32toFloat32Bytes(matrix.GetColumn(3).y));
                     Color color7 = Float32Bytes2Color(Float32toFloat32Bytes(matrix.GetColumn(3).z));
-                    Color color8 = Float32Bytes2Color(Float32toFloat32Bytes(Mathf.Clamp01(matrix.lossyScale.magnitude)));
+                    Color color8 = Float32Bytes2Color(Float32toFloat32Bytes(scale.x));
 
                     pixelUv = convertPixel2UV(pixelIdx++);
                     tex2D.SetPixel(pixelUv.x, pixelUv.y, color1);
@@ -1044,15 +1044,14 @@ public class GpuSkinningGenerator
 
     public static float Color2Float32(Color color)
     {
-        float integers = color.r * 255;
-        int integer = (int)integers;
+        int integer = Mathf.FloorToInt(color.r * 255.0f + 0.5f);
 
         int flag = (integer / 128);//符号  <=128 flag为0 //1: 负  0:正
 
         integer = integer - flag * 128; // 整数部分
-        float floats0 = color.g;
-        float floats1 = color.b / (255.0f);
-        float floats2 = color.a / (255.0f * 255.0f);
+        float floats0 = Mathf.FloorToInt(color.g * 255.0f + 0.5f) / 256.0f;
+        float floats1 = Mathf.FloorToInt(color.b * 255.0f + 0.5f) / 65536.0f;
+        float floats2 = Mathf.FloorToInt(color.a * 255.0f + 0.5f) / 16777216.0f;
 
         float result = integer + floats0 + floats1 + floats2;
         result = result - 2 * flag * result;        //1: 负  0:正

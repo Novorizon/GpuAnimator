@@ -55,6 +55,11 @@ Shader "Custom/GpuSkinningAnimation"
 
             float4x4 QuaternionToMatrix(float4 vec)
             {
+                float lengthSq = dot(vec, vec);
+                vec = lengthSq > 0.000000000001
+                    ? vec * rsqrt(max(lengthSq, 0.000000000001))
+                    : float4(0, 0, 0, 1);
+
                 float4x4 ret;
                 ret._11 = 2.0 * (vec.x * vec.x + vec.w * vec.w) - 1;
                 ret._21 = 2.0 * (vec.x * vec.y + vec.z * vec.w);
@@ -102,15 +107,15 @@ Shader "Custom/GpuSkinningAnimation"
 
             float ConvertColorToFloat32(float4 color)
             {
-                float integers = color.r * 255;
-                int integer = (int)integers;
+                float4 bytes = floor(color * 255.0 + 0.5);
+                int integer = (int)bytes.r;
 
-                int flag = (integer / 128);//符号  <=128 flag为0 //1: 负  0:正
+                int flag = integer / 128; // 1: negative, 0: positive
                 
                 integer = integer - flag * 128; // 整数部分
-                float floats0 = color.g;
-                float floats1 = color.b / 255.0;
-                float floats2 = color.a / 65025.0;
+                float floats0 = bytes.g / 256.0;
+                float floats1 = bytes.b / 65536.0;
+                float floats2 = bytes.a / 16777216.0;
                 
                 float result = integer + floats0 + floats1 + floats2;
                 result = result - 2 * flag * result;		//1: 负  0:正

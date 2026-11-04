@@ -1,5 +1,7 @@
 ﻿using System;
-using UnityEngine;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 
 // 动画clip信息
 [Serializable]
@@ -37,4 +39,24 @@ public class GpuSkinningAnimData
 
     public int totalFrame;
     public int totalBoneNum;
+
+    /// <summary>
+    /// Decodes bytes produced by the baking tool. Loading and caching the source
+    /// asset remain the caller's responsibility; share the decoded data across instances.
+    /// </summary>
+    public static GpuSkinningAnimData FromBytes(byte[] bytes)
+    {
+        if (bytes == null)
+            throw new ArgumentNullException(nameof(bytes));
+
+        using (MemoryStream stream = new MemoryStream(bytes, false))
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            GpuSkinningAnimData data = formatter.Deserialize(stream) as GpuSkinningAnimData;
+            if (data == null)
+                throw new SerializationException("The asset does not contain GPU animation data.");
+
+            return data;
+        }
+    }
 }

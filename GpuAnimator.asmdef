@@ -1,11 +1,7 @@
 {
     "name": "GpuAnimator",
     "rootNamespace": "",
-    "references": [
-        "GUID:efc06480963469442a1197943668d6e4",
-        "GUID:fb26fd08c3eabc84285224fe31860293",
-        "GUID:f754b4d3f6d7da54d8ebc13c383ea04f"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": true,

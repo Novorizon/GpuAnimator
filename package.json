@@ -1,8 +1,8 @@
 {
   "name": "com.guanjinbiao.gpuanimator",
   "displayName": "Gpu Animator",
-  "description": "Gpu Animator",
-  "version": "1.0.0r",
+  "description": "Standalone GPU animation for GameObjects with caller-supplied assets",
+  "version": "2.0.0",
   "unity": "2020.2",
   "license": "MIT",
   "author": {

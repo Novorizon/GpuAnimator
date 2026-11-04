@@ -249,6 +249,7 @@ public class GpuSkinningGenerator
         renderer.sharedMaterial = instMaterial;
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = false;
+        prefab.AddComponent<GpuAnimator>();
 
         Material[] mats = new Material[] { instMaterial };
         if (defaultMaterial != null)

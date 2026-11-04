@@ -6,6 +6,8 @@
 
 `main` 是独立的 GameObject/MonoBehaviour 版本；原 PureMVCFramework ECS 版本保留在 [`ecs` 分支](https://github.com/Novorizon/GpuAnimator/tree/ecs)。当前示例面向 Unity 2020.2+ 的 **Built-in Render Pipeline**。
 
+3.0 使用完整的数据类型名 `AnimationData` 和 `AnimationClipData`；组件入口仍为 `GpuAnimator`。从 2.x 升级请替换源码中的旧类型名，`AnimationData.FromBytes` 可以读取旧元数据，见[命名迁移说明](Documentation~/integration.md#从-2x-迁移数据类型名称)。
+
 1. 在 Unity Package Manager 通过 Git URL 安装：`https://github.com/Novorizon/GpuAnimator.git#main`。
 2. 准备同一次烘焙得到的 prefab、材质、动画纹理和 `.bytes` 元数据，具体目录和烘焙步骤见[入门指南](Documentation~/getting-started.md)。
 3. 资源由业务或 Framework 加载，播放器接收已配置的 Renderer 和解析后的数据：
@@ -13,7 +15,7 @@
 ```csharp
 // loadedData、instance、renderer、clipName 均由调用方提供。
 // 数据解析一次后，可以供同一模型的多个实例共享。
-var sharedData = GpuSkinningAnimData.FromBytes(loadedData.bytes);
+var sharedData = AnimationData.FromBytes(loadedData.bytes);
 var player = instance.GetComponent<GpuAnimator>();
 if (player == null)
     player = instance.AddComponent<GpuAnimator>();
@@ -75,7 +77,7 @@ animation texture, bone count and texture dimensions.
 Decode the metadata once and share it across instances:
 
 ```csharp
-GpuSkinningAnimData sharedData = GpuSkinningAnimData.FromBytes(loadedData.bytes);
+AnimationData sharedData = AnimationData.FromBytes(loadedData.bytes);
 ```
 
 Then initialize each instance with its renderer and the shared metadata:
@@ -142,11 +144,14 @@ GPU animation uses a rotation quaternion, translation and one uniform scale per
 bone, followed by four-weight linear blend skinning. Use matching X/Y/Z scale;
 independent axis scale and shear are outside this data format.
 
-Rebake existing animation textures after updating. Uniform scale is now stored
+Rebake animation textures produced before the uniform-scale and decoding fixes.
+Uniform scale is now stored
 directly instead of clamping the scale vector's magnitude, and byte decoding
 matches the encoder's binary fractions. Old textures cannot recover scale
-values already lost during baking. The data class and runtime assembly names
-remain unchanged so the existing `.bytes` metadata format can still be decoded.
+values already lost during baking. Version 3 renames the data classes while
+keeping their serialized fields and the runtime assembly name. `AnimationData.FromBytes`
+maps the former data type names so existing `.bytes` remain readable. Textures
+already produced by the fixed baker do not need rebaking for this naming change.
 
 ## Framework integration
 

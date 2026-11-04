@@ -412,7 +412,7 @@ public class GpuSkinningTools : EditorWindow
     }
 
 
-    static public void AnimClipState(AnimationClip clip, GpuSkinningAnimClip boneAnimation)
+    static public void AnimationClipState(AnimationClip clip, AnimationClipData boneAnimation)
     {
         string path = "Assets/Resources/animClipState.txt";
         StringBuilder sb = new StringBuilder(128);

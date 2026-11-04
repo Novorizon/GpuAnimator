@@ -1,6 +1,6 @@
 # API 参考
 
-本文对应 `main` 分支的 2.x 组件 API。类型没有命名空间，位于 `GpuAnimator` 程序集。
+本文对应 `main` 分支的 3.x 组件 API。类型没有命名空间，位于 `GpuAnimator` 程序集。
 
 ## GpuAnimator
 
@@ -23,8 +23,8 @@ public sealed class GpuAnimator : MonoBehaviour
 ### Initialize
 
 ```csharp
-public bool Initialize(Renderer targetRenderer, GpuSkinningAnimData animationData)
-public bool Initialize(GpuSkinningAnimData animationData)
+public bool Initialize(Renderer targetRenderer, AnimationData animationData)
+public bool Initialize(AnimationData animationData)
 ```
 
 绑定调用方提供的 Renderer 和元数据。第二个重载使用本组件同一 GameObject 上的 `GetComponent<Renderer>()`，不会搜索子对象。
@@ -48,7 +48,7 @@ public bool TryPlay(
 
 | 参数 | 行为 |
 | --- | --- |
-| `clipName` | 要播放的 `GpuSkinningAnimClip.name` |
+| `clipName` | 要播放的 `AnimationClipData.name` |
 | `callback` / `userdata` | 非循环动画自然结束后回调一次，并原样传回 userdata |
 | `randomizeStart` | 默认 `false`；为 `true` 时在动画前段随机选择起始偏移，用于错开群体相位 |
 | `loop` | `null` 使用烘焙的 `clip.loop`；`true`/`false` 仅覆盖当前实例的此次播放，不修改共享元数据 |
@@ -124,16 +124,16 @@ public void SetPropertyBlock()
 
 ```csharp
 [Serializable]
-public class GpuSkinningAnimData
+public class AnimationData
 {
     public int texWidth;
     public int texHeight;
     public byte[] texBytes;
-    public GpuSkinningAnimClip[] clips;
+    public AnimationClipData[] clips;
     public int totalFrame;
     public int totalBoneNum;
 
-    public static GpuSkinningAnimData FromBytes(byte[] bytes);
+    public static AnimationData FromBytes(byte[] bytes);
 }
 ```
 
@@ -141,9 +141,11 @@ public class GpuSkinningAnimData
 
 `FromBytes` 不验证各字段的业务正确性。它成功返回也不表示可以播放任意 Clip。当前 PNG 导出流程没有用 `texBytes` 内嵌纹理；实际骨骼数据仍由材质绑定的动画 PNG 提供。
 
+兼容读取旧版 `GpuSkinningAnimData` / `GpuSkinningAnimClip` 保存的元数据：内部 Binder 将旧类型名映射到新类型，字段名称与数据含义保持不变。新烘焙使用 `AnimationData` / `AnimationClipData` 类型名；旧公开类型名不再作为源码 API 提供。
+
 ```csharp
 [Serializable]
-public class GpuSkinningAnimClip
+public class AnimationClipData
 {
     public string name;
     public int startFrame;
@@ -151,8 +153,8 @@ public class GpuSkinningAnimClip
     public bool loop;
     public float frameRate;
 
-    public GpuSkinningAnimClip(
-        string n, int sf, int ef, bool l, float frameRate);
+    public AnimationClipData(
+        string name, int startFrame, int endFrame, bool loop, float frameRate);
     public int Length();
 }
 ```

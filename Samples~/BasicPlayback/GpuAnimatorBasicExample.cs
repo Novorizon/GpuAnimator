@@ -11,7 +11,7 @@ namespace GpuAnimatorSamples
         [SerializeField] private string actionClipName;
 
         private TextAsset decodedAsset;
-        private GpuSkinningAnimData decodedData;
+        private AnimationData decodedData;
         private GpuAnimator player;
 
         [ContextMenu("Initialize Sample")]
@@ -33,7 +33,7 @@ namespace GpuAnimatorSamples
                 decodedData = null;
                 try
                 {
-                    decodedData = GpuSkinningAnimData.FromBytes(animationDataAsset.bytes);
+                    decodedData = AnimationData.FromBytes(animationDataAsset.bytes);
                     decodedAsset = animationDataAsset;
                 }
                 catch (Exception exception)

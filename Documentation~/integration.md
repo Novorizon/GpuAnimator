@@ -15,8 +15,8 @@
 
 ```csharp
 // loadedMetadata 是调用方加载的 TextAsset。
-GpuSkinningAnimData sharedData =
-    GpuSkinningAnimData.FromBytes(loadedMetadata.bytes);
+AnimationData sharedData =
+    AnimationData.FromBytes(loadedMetadata.bytes);
 ```
 
 同一套资源的多个实例共享 `sharedData`、Mesh、材质和动画 PNG；每个实例有独立的 `GpuAnimator` 与 PropertyBlock，不必为每个人创建一个 Material。生成材质已经开启 Instancing；共享资源并不保证任意渲染条件下都能合批，请用项目中的 Frame Debugger/Profiler 检查。
@@ -98,6 +98,21 @@ player.SetPropertyBlock();
 此片段用于演示缓存协作，当前 Shader 的 `_Color` 未声明为实例化属性，逐实例设置可能破坏自动 GPU Instancing；若需保留合批，请只设置已声明的实例化属性，或扩展 Shader 以支持实例颜色。
 
 播放器下一次应用帧时会保留缓存中的其他属性，并覆盖 `_FrameIndex` 和 `_BlendFrameIndex`。请把这两个属性交给播放器管理。若其他系统之后再次改写 Renderer 的块，也需要再次刷新；反复覆盖同一个 Renderer 的多套播放器没有独立的动画状态输出。
+
+## 从 2.x 迁移数据类型名称
+
+| 旧源码类型 | 新源码类型 |
+| --- | --- |
+| `GpuSkinningAnimData` | `AnimationData` |
+| `GpuSkinningAnimClip` | `AnimationClipData` |
+
+替换字段、参数和泛型中的类型引用，解码入口改为 `AnimationData.FromBytes(loadedMetadata.bytes)`。播放器仍是 `GpuAnimator`，资源注入、播放和 Tick 接口的行为保持一致；新数据类型文件为 `GpuAnimator/Runtime/AnimationData.cs`。
+
+`FromBytes` 的兼容 Binder 能读取旧 `.bytes` 的根对象、Clip 及 Clip 数组类型，原序列化字段名仍保留。仅为本次命名迁移不需要重新烘焙现有修复版动画 PNG。新类型名是源码 API 变更，因此包版本升级为 3.0.0；调用方应同步更新类型引用。
+
+已通过 Package Manager 导入到 `Assets/Samples/` 的旧示例是项目内的副本，不会随包升级自动改写。请更新其中的旧类型引用，或移除旧版示例目录后重新导入当前 Samples。
+
+兼容读取通过 `AnimationData.FromBytes` 提供；自行直接调用未配置 Binder 的 BinaryFormatter 不会获得这项映射。新烘焙元数据使用新类型名，因此旧 `ecs` 分支应继续使用对应版本生成的元数据，不能直接读取 3.x 新生成的 `.bytes`。
 
 ## 从 ecs 分支迁移
 

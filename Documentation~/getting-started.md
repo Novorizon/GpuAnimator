@@ -81,7 +81,7 @@ prefab 不会自动加载 `.bytes` 或开始播放。使用 PBR 输出时，应�
 
 ```csharp
 // 同一角色解码一次，缓存结果，供后续实例共享。
-GpuSkinningAnimData sharedData = GpuSkinningAnimData.FromBytes(loadedData.bytes);
+AnimationData sharedData = AnimationData.FromBytes(loadedData.bytes);
 
 GpuAnimator player = instance.GetComponent<GpuAnimator>();
 if (player == null)
@@ -103,7 +103,7 @@ if (player.Initialize(renderer, sharedData))
 要检查实际可用的动画名称，可以遍历元数据，而不用猜测文件名：
 
 ```csharp
-foreach (GpuSkinningAnimClip clip in sharedData.clips)
+foreach (AnimationClipData clip in sharedData.clips)
 {
     if (clip != null)
         Debug.Log(clip.name);

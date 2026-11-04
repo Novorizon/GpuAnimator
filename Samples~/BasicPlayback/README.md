@@ -23,7 +23,7 @@
 
 ## 接入自己的业务
 
-`GpuAnimatorBasicExample` 将 Inspector 引用作为资源注入来源：调用 `GpuSkinningAnimData.FromBytes` 一次，再传给 `Initialize(renderer, data)`。替换成自己的资源系统时，在加载完成后执行同样的初始化即可，无须修改播放器。
+`GpuAnimatorBasicExample` 将 Inspector 引用作为资源注入来源：调用 `AnimationData.FromBytes` 一次，再传给 `Initialize(renderer, data)`。替换成自己的资源系统时，在加载完成后执行同样的初始化即可，无须修改播放器。
 
 示例在指定 Renderer 所在对象上复用或添加 `GpuAnimator`。重新初始化和示例销毁时，只清理它持有的这个播放器；不要让多个控制脚本同时驱动同一播放器。动画缺失或解码失败会输出 Console 错误，不会自动改用其他名称。
 

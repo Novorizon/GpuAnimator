@@ -12,9 +12,9 @@ public sealed class GpuAnimator : MonoBehaviour
     private static readonly int BlendFrameIndexId = Shader.PropertyToID("_BlendFrameIndex");
 
     private Renderer targetRenderer;
-    private GpuSkinningAnimData animationData;
+    private AnimationData animationData;
     private MaterialPropertyBlock propertyBlock;
-    private GpuSkinningAnimClip currentClip;
+    private AnimationClipData currentClip;
     private int currentFrame = -1;
     private int lastFrame = -1;
     private bool isPlaying;
@@ -34,7 +34,7 @@ public sealed class GpuAnimator : MonoBehaviour
     /// Attaches caller-owned playback data and a renderer whose mesh, materials, and
     /// animation texture are already configured. No animation starts automatically.
     /// </summary>
-    public bool Initialize(Renderer targetRenderer, GpuSkinningAnimData animationData)
+    public bool Initialize(Renderer targetRenderer, AnimationData animationData)
     {
         Clear();
         if (targetRenderer == null || animationData == null || animationData.clips == null || animationData.totalFrame <= 0)
@@ -50,7 +50,7 @@ public sealed class GpuAnimator : MonoBehaviour
     /// <summary>
     /// Uses the renderer on this GameObject with caller-owned animation data.
     /// </summary>
-    public bool Initialize(GpuSkinningAnimData animationData)
+    public bool Initialize(AnimationData animationData)
     {
         return Initialize(GetComponent<Renderer>(), animationData);
     }
@@ -85,7 +85,7 @@ public sealed class GpuAnimator : MonoBehaviour
 
         for (int i = 0; i < animationData.clips.Length; i++)
         {
-            GpuSkinningAnimClip clip = animationData.clips[i];
+            AnimationClipData clip = animationData.clips[i];
             if (clip == null || !string.Equals(clip.name, clipName, StringComparison.Ordinal))
                 continue;
 

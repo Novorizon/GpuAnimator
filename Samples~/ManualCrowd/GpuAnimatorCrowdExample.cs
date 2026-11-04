@@ -16,7 +16,7 @@ namespace GpuAnimatorSamples
         private readonly List<GameObject> spawnedObjects = new List<GameObject>();
         private readonly List<GpuAnimator> players = new List<GpuAnimator>();
         private TextAsset decodedAsset;
-        private GpuSkinningAnimData decodedData;
+        private AnimationData decodedData;
 
         [ContextMenu("Spawn Crowd")]
         public void SpawnCrowd()
@@ -43,7 +43,7 @@ namespace GpuAnimatorSamples
                 decodedData = null;
                 try
                 {
-                    decodedData = GpuSkinningAnimData.FromBytes(animationDataAsset.bytes);
+                    decodedData = AnimationData.FromBytes(animationDataAsset.bytes);
                     decodedAsset = animationDataAsset;
                 }
                 catch (Exception exception)

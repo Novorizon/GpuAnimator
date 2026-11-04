@@ -14,7 +14,7 @@
 
 进入 Play Mode，在组件菜单中执行 **Spawn Crowd**。脚本会把实例放在该空对象下，沿本地 X/Z 方向排成网格。
 
-- 动画 `.bytes` 对当前 TextAsset 仅解码一次，所有实例共享同一个 `GpuSkinningAnimData`。
+- 动画 `.bytes` 对当前 TextAsset 仅解码一次，所有实例共享同一个 `AnimationData`。
 - 每个实例只在创建时查找 Renderer 和播放器。播放器设为 `AutomaticUpdate = false`，由群体管理脚本的 `Update` 遍历缓存列表调用 `Tick(Time.deltaTime)`，避免自动和手动重复推进。
 - `TryPlay` 使用 Inspector 提供的名称，并显式传入 `loop: true` 与 `randomizeStart: true`。随机偏移沿用播放器已有的动画首段规则，并非整个周期均匀随机。
 - 再次执行 **Spawn Crowd** 会先清理旧实例。执行 **Clear Crowd** 或销毁管理对象会清理它创建的播放器和对象。生成过程中发生错误时，也会清理已生成实例。

@@ -39,7 +39,7 @@ public class GpuSkinningGenerator
 
 
     private GenerateType genType = (GenerateType)0;
-    private GpuSkinningAnimData animData = null;
+    private AnimationData animationData = null;
     // 生成的网格
     Mesh instMesh = null;
     List<Vector4> boneIndicesList = null;
@@ -48,18 +48,18 @@ public class GpuSkinningGenerator
     Material instMaterial = null;
     // 原始的默认材质
     Material defaultMaterial = null;
-    private AnimationClip[] animClips = null;
+    private AnimationClip[] animationClips = null;
     private SkinnedMeshRenderer selectedSkinnedMeshRenderer = null;
-    private List<GpuSkinningAnimClip> clipsData = null;
+    private List<AnimationClipData> clipsData = null;
     Dictionary<Transform, int> boneIds = null;
     Dictionary<int, Matrix4x4> boneBindposes = null;
-    string animTexturePath; // 动画纹理保存路径
+    string animationTexturePath; // 动画纹理保存路径
 
     static int id = 100001;
     public GpuSkinningGenerator(GenerateType type = 0)
     {
         genType = type;
-        clipsData = new List<GpuSkinningAnimClip>();
+        clipsData = new List<AnimationClipData>();
         boneBindposes = new Dictionary<int, Matrix4x4>();
         boneIndicesList = new List<Vector4>();
         boneWeightsList = new List<Vector4>();
@@ -68,7 +68,7 @@ public class GpuSkinningGenerator
     public void reset()
     {
         curGameObject = null;
-        animData = null;
+        animationData = null;
         clipsData.Clear();
         if (boneIds != null)
         {
@@ -82,11 +82,11 @@ public class GpuSkinningGenerator
         if (obj == null)
         {
             Debug.LogError("select obj is null!!");
-            animData = null;
+            animationData = null;
             return;
         }
 
-        if (curGameObject != obj || animData == null || genType != type || skinnedMeshRenderer != selectedSkinnedMeshRenderer)
+        if (curGameObject != obj || animationData == null || genType != type || skinnedMeshRenderer != selectedSkinnedMeshRenderer)
         {
             genType = type;
             curGameObject = obj;
@@ -99,32 +99,32 @@ public class GpuSkinningGenerator
 
     public void refreshGeneratorInfo()
     {
-        animData = new GpuSkinningAnimData();
+        animationData = new AnimationData();
         int totalFrame = 0;
         int clipFrame = 0;
         clipsData.Clear();
 
         boneIds = resortBone(curGameObject);
-        animData.totalBoneNum = boneIds.Count;
+        animationData.totalBoneNum = boneIds.Count;
 
-        animClips = clipList.ToArray();
-        for (int i = 0; i < animClips.Length; ++i)
+        animationClips = clipList.ToArray();
+        for (int i = 0; i < animationClips.Length; ++i)
         {
-            AnimationClip clip = animClips[i];
+            AnimationClip clip = animationClips[i];
             clipFrame = (int)(clip.frameRate * clip.length);
 
             AnimationClipSettings clipSetting = AnimationUtility.GetAnimationClipSettings(clip);
 
-            GpuSkinningAnimClip clipData = new GpuSkinningAnimClip(clip.name, totalFrame, totalFrame + clipFrame - 1, clipSetting.loopTime, clip.frameRate);
+            AnimationClipData clipData = new AnimationClipData(clip.name, totalFrame, totalFrame + clipFrame - 1, clipSetting.loopTime, clip.frameRate);
             clipsData.Add(clipData);
 
             totalFrame += clipFrame;
         }
-        animData.totalFrame = totalFrame;
-        animData.clips = clipsData.ToArray();
+        animationData.totalFrame = totalFrame;
+        animationData.clips = clipsData.ToArray();
 
         long totalPixels = boneIds.Count * DEFAULT_PER_FRAME_BONE_DATASPACE * totalFrame;
-        calTextureSize(totalPixels, out animData.texWidth, out animData.texHeight);
+        calTextureSize(totalPixels, out animationData.texWidth, out animationData.texHeight);
     }
 
     // 根据所需空间计算纹理大小
@@ -297,7 +297,7 @@ public class GpuSkinningGenerator
         instMaterial.enableInstancing = true;
         //defaultMaterial = defaultMat;
 
-        Texture2D saved_animTex = AssetDatabase.LoadAssetAtPath<Texture2D>(animTexturePath);
+        Texture2D savedAnimationTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(animationTexturePath);
         // 材质
         if (File.Exists(mainTexPath))
         {
@@ -309,9 +309,9 @@ public class GpuSkinningGenerator
             Texture2D maskTex = AssetDatabase.LoadAssetAtPath<Texture2D>(maskTexPath);
             instMaterial.SetTexture("_Mask", maskTex);
         }
-        instMaterial.SetTexture("_AnimationTex", saved_animTex);
-        instMaterial.SetInt("_BoneNum", animData.totalBoneNum);
-        instMaterial.SetVector("_AnimationTexSize", new Vector4(animData.texWidth, animData.texHeight, 0, 0));
+        instMaterial.SetTexture("_AnimationTex", savedAnimationTexture);
+        instMaterial.SetInt("_BoneNum", animationData.totalBoneNum);
+        instMaterial.SetVector("_AnimationTexSize", new Vector4(animationData.texWidth, animationData.texHeight, 0, 0));
 
         string matPath = Path.Combine(savePath, matFileName);
         AssetDatabase.CreateAsset(instMaterial, matPath);
@@ -321,27 +321,27 @@ public class GpuSkinningGenerator
 
     public void generateTexAndMesh(string parentFolder, string savePath, string dataFileName)
     {
-        int numBones = animData.totalBoneNum;
+        int numBones = animationData.totalBoneNum;
 
         // 重新生成mesh
         rebuildAllMeshes(savePath, parentFolder);
 
         // 将骨骼矩阵写入纹理
-        var tex2D = new Texture2D(animData.texWidth, animData.texHeight, TextureFormat.RGBA32, false);
+        var tex2D = new Texture2D(animationData.texWidth, animationData.texHeight, TextureFormat.RGBA32, false);
         tex2D.filterMode = FilterMode.Point;
         int clipIdx = 0;
         int pixelIdx = 0;
         Vector2Int pixelUv;
-        GpuSkinningAnimClip boneAnimation = null;
+        AnimationClipData boneAnimation = null;
         AnimationClip clip = null;
         List<Matrix4x4> boneMatrices = null;
 
         //每个不同动画需要标记一下始末位置
-        for (clipIdx = 0; clipIdx < animClips.Length; ++clipIdx)
+        for (clipIdx = 0; clipIdx < animationClips.Length; ++clipIdx)
         {
-            boneAnimation = animData.clips[clipIdx];
-            clip = animClips[clipIdx];
-            //GpuSkinningTools.AnimClipState(clip, boneAnimation);
+            boneAnimation = animationData.clips[clipIdx];
+            clip = animationClips[clipIdx];
+            //GpuSkinningTools.AnimationClipState(clip, boneAnimation);
             for (int frameIndex = 0; frameIndex < boneAnimation.Length(); frameIndex++)
             {
                 boneMatrices = samplerAnimationClipBoneMatrices(curGameObject, clip, (float)frameIndex / clip.frameRate);
@@ -391,9 +391,9 @@ public class GpuSkinningGenerator
         }
         tex2D.Apply();
         // 导出动画纹理
-        animTexturePath = savePath + dataFileName.Replace(".bytes", "") + ".png";
-        exportTexture(tex2D, animTexturePath);
-        setAnimationTextureProperties(animTexturePath);
+        animationTexturePath = savePath + dataFileName.Replace(".bytes", "") + ".png";
+        exportTexture(tex2D, animationTexturePath);
+        setAnimationTextureProperties(animationTexturePath);
 
         // 序列化后存储
 
@@ -405,34 +405,34 @@ public class GpuSkinningGenerator
 
         FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
         BinaryFormatter bf = new BinaryFormatter();
-        bf.Serialize(fs, animData);
+        bf.Serialize(fs, animationData);
         fs.Close();
         AssetDatabase.Refresh();
     }
 
     public void GenerateTexAndMesh(string parentFolder, string savePath, string dataFileName)
     {
-        int numBones = animData.totalBoneNum;
+        int numBones = animationData.totalBoneNum;
 
         // 重新生成mesh
         rebuildAllMeshes(savePath, parentFolder);
 
         // 将骨骼矩阵写入纹理
-        var tex2D = new Texture2D(animData.texWidth, animData.texHeight, TextureFormat.RGBA32, false);
+        var tex2D = new Texture2D(animationData.texWidth, animationData.texHeight, TextureFormat.RGBA32, false);
         tex2D.filterMode = FilterMode.Point;
         int clipIdx = 0;
         int pixelIdx = 0;
         Vector2Int pixelUv;
-        GpuSkinningAnimClip boneAnimation = null;
+        AnimationClipData boneAnimation = null;
         AnimationClip clip = null;
         List<Matrix4x4> boneMatrices = null;
 
         //每个不同动画需要标记一下始末位置
-        for (clipIdx = 0; clipIdx < animClips.Length; ++clipIdx)
+        for (clipIdx = 0; clipIdx < animationClips.Length; ++clipIdx)
         {
-            boneAnimation = animData.clips[clipIdx];
-            clip = animClips[clipIdx];
-            //GpuSkinningTools.AnimClipState(clip, boneAnimation);
+            boneAnimation = animationData.clips[clipIdx];
+            clip = animationClips[clipIdx];
+            //GpuSkinningTools.AnimationClipState(clip, boneAnimation);
             for (int frameIndex = 0; frameIndex < boneAnimation.Length(); frameIndex++)
             {
                 boneMatrices = samplerAnimationClipBoneMatrices(curGameObject, clip, (float)frameIndex / clip.frameRate);
@@ -493,9 +493,9 @@ public class GpuSkinningGenerator
         }
         tex2D.Apply();
         // 导出动画纹理
-        animTexturePath = savePath + dataFileName.Replace(".bytes", "") + ".png";
-        exportTexture(tex2D, animTexturePath);
-        setAnimationTextureProperties(animTexturePath);
+        animationTexturePath = savePath + dataFileName.Replace(".bytes", "") + ".png";
+        exportTexture(tex2D, animationTexturePath);
+        setAnimationTextureProperties(animationTexturePath);
 
         // 序列化后存储
 
@@ -507,7 +507,7 @@ public class GpuSkinningGenerator
 
         FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
         BinaryFormatter bf = new BinaryFormatter();
-        bf.Serialize(fs, animData);
+        bf.Serialize(fs, animationData);
         fs.Close();
         AssetDatabase.Refresh();
     }
@@ -614,8 +614,8 @@ public class GpuSkinningGenerator
 
     private Vector2Int convertPixel2UV(int idx)
     {
-        int row = (int)(idx / animData.texWidth);
-        int column = idx - row * animData.texWidth;
+        int row = (int)(idx / animationData.texWidth);
+        int column = idx - row * animationData.texWidth;
         return new Vector2Int(column, row);
     }
 
@@ -626,7 +626,7 @@ public class GpuSkinningGenerator
 
         List<Matrix4x4> matrices = new List<Matrix4x4>();
         clip.SampleAnimation(obj, time);
-        for (int i = 0; i < animData.totalBoneNum; ++i)
+        for (int i = 0; i < animationData.totalBoneNum; ++i)
         {
             Transform bone = null;
             foreach (var key in boneIds.Keys)
@@ -827,9 +827,9 @@ public class GpuSkinningGenerator
         }
     }
 
-    public GpuSkinningAnimData getAnimData()
+    public AnimationData GetAnimationData()
     {
-        return animData;
+        return animationData;
     }
 
     public static bool IslegalString(string str)

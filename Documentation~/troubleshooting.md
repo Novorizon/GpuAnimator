@@ -6,6 +6,8 @@
 
 包声明的最低 Unity 版本是 2020.2。附带 Shader 使用 Built-in Render Pipeline；URP/HDRP 出现粉色材质时，需要移植对应 Shader，不能只更换播放脚本解决。
 
+从 2.x 升级到 3.x 后若提示旧数据类型不存在，请将业务代码以及已导入 `Assets/Samples/` 中的 `GpuSkinningAnimData` / `GpuSkinningAnimClip` 替换为 `AnimationData` / `AnimationClipData`。旧示例副本不会随包更新自动覆盖，详见[命名迁移说明](integration.md#从-2x-迁移数据类型名称)。
+
 ## 烘焙数量为零或没有输出
 
 按[快速开始](getting-started.md#准备原始资源)核对完整目录结构。菜单扫描的是固定路径 `Assets/Artworks/GpuRole/`，不是 Project 窗口当前选择。
@@ -72,7 +74,7 @@ Stop、Clear、重新 Initialize 或成功启动另一段动画都会取消旧�
 
 当前 Shader 不执行帧间插值和 Clip 过渡混合；`_BlendFrameIndex` / `_BlendProgress` 属性的存在不表示已经启用交叉淡化。需要更平滑的时间采样时，可以提高输入 Clip 的烘焙帧率；需要真正的插值/混合则需扩展实现。
 
-升级后重新烘焙旧动画 PNG。旧版对缩放向量取 magnitude 并截断到 `[0,1]`，已经丢失的数据不能仅靠新解码器修复。若不同 Clip 在缺少某些骨骼轨道时出现顺序相关的姿态，检查输入动画是否完整：当前工具连续在同一对象上 SampleAnimation，没有为每个 Clip 恢复基准姿态。
+从缩放修复前的旧版本升级时重新烘焙动画 PNG。旧版对缩放向量取 magnitude 并截断到 `[0,1]`，已经丢失的数据不能仅靠新解码器修复；本次数据类型改名本身不要求重烘焙。若不同 Clip 在缺少某些骨骼轨道时出现顺序相关的姿态，检查输入动画是否完整：当前工具连续在同一对象上 SampleAnimation，没有为每个 Clip 恢复基准姿态。
 
 ## 动画纹理导入后数据损坏
 

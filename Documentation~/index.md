@@ -19,10 +19,12 @@ GpuAnimator 将骨骼动画离线写入纹理，在顶点 Shader 中执行蒙皮
 
 | 分支 | 播放方式 | 依赖与用途 |
 | --- | --- | --- |
-| [`main`](https://github.com/Novorizon/GpuAnimator/tree/main) | GameObject / MonoBehaviour，本文档对应的 2.x API | 依赖 Unity，由调用方加载资源；不依赖 ECS 或业务 Framework |
+| [`main`](https://github.com/Novorizon/GpuAnimator/tree/main) | GameObject / MonoBehaviour，本文档对应的 3.x API | 依赖 Unity，由调用方加载资源；不依赖 ECS 或业务 Framework |
 | [`ecs`](https://github.com/Novorizon/GpuAnimator/tree/ecs) | 原有 Entity / Component / System 实现 | 保留 PureMVCFramework 接入方式，继续维护已有 ECS 项目时使用 |
 
 2.x 将旧的静态 Entity API 改为组件实例 API。旧代码中的 `GpuAnimator.Play(entity, ...)` 不能直接套用到 `main`；请按[接入文档](integration.md)迁移，或使用 `ecs` 分支。两个分支是替代版本，不要把它们同时导入同一个 Unity 项目。
+
+3.x 将数据类型改为 `AnimationData` 和 `AnimationClipData`，保留 `GpuAnimator` 组件名。旧元数据仍可通过 `AnimationData.FromBytes` 读取；源码改名步骤见[命名迁移说明](integration.md#从-2x-迁移数据类型名称)。
 
 ## 数据与职责
 
@@ -38,6 +40,6 @@ GpuAnimator 将骨骼动画离线写入纹理，在顶点 Shader 中执行蒙皮
 
 播放按烘焙帧率离散采样，没有帧间插值或动画过渡混合。静态 Mesh 包围盒、多 SkinnedMeshRenderer 烘焙等边界见[问题排查](troubleshooting.md)。
 
-从旧版本升级时应重新烘焙动画 PNG：统一缩放现直接保存实际缩放值，解码也已与编码的小数进制对齐。旧 PNG 中已经丢失的缩放信息无法在运行时恢复；`.bytes` 仍沿用现有数据类和序列化格式。
+从统一缩放与解码修复前的版本升级时应重新烘焙动画 PNG：旧 PNG 中已经丢失的缩放信息无法在运行时恢复。仅从 2.x 升级到本次数据类型改名不需要重新烘焙已修复的动画纹理；`FromBytes` 兼容旧元数据中的类型名与既有序列化字段。
 
-源码入口：[播放器](../GpuAnimator/Runtime/GpuAnimator.cs)、[元数据](../GpuAnimator/Runtime/GpuSkinningDataDefine.cs)、[烘焙工具](../GpuAnimator/Editor/GpuSkinningTools.cs)。
+源码入口：[播放器](../GpuAnimator/Runtime/GpuAnimator.cs)、[元数据](../GpuAnimator/Runtime/AnimationData.cs)、[烘焙工具](../GpuAnimator/Editor/GpuSkinningTools.cs)。

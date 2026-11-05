@@ -37,3 +37,7 @@
 保存器只对本次生成的 Mesh 和材质调用指定路径的 `ForceReserializeAssets`，避免保存项目中其他未提交的 dirty 资产。生成文件由烘焙器管理，自定义组件和结构应放在单独的包装 prefab 或 Variant 中。
 
 如磁盘或导入错误同时导致自动恢复失败，错误报告会保留备份路径；备份位于项目 `Library/GpuAnimatorBakeBackup/` 下。按其中 `manifest.json` 的路径对应关系恢复本次涉及的文件与 `.meta`，再重新导入和验证；恢复前保留这份备份。
+
+## 自动化执行
+
+在安装本包、Unity Test Framework 并配置 testables 的 Built-in 测试工程运行：`python Tools~/run-unity-tests.py --unity /path/to/Unity --project /path/to/project --output /path/to/new-results`。报告必须包含非零且全部通过的测试。新增 GpuAnimatorPlaybackTests 连接烘焙、保存、解码、注入、播放与清理；本轮源码环境没有执行这些原生步骤。

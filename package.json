@@ -2,7 +2,7 @@
   "name": "com.guanjinbiao.gpuanimator",
   "displayName": "Gpu Animator",
   "description": "Standalone GPU animation for GameObjects with caller-supplied assets",
-  "version": "3.1.0",
+  "version": "3.2.0-preview.1",
   "unity": "2020.2",
   "documentationUrl": "https://github.com/Novorizon/GpuAnimator/blob/main/Documentation~/index.md",
   "license": "MIT",
@@ -20,6 +20,11 @@
       "displayName": "Manual Crowd",
       "description": "共享动画数据与材质，由一个更新入口手动驱动多个实例。",
       "path": "Samples~/ManualCrowd"
+    },
+    {
+      "displayName": "Framework Pool",
+      "description": "Optional Unity 2022.3 + Framework 0.10 pooling integration; clears playback before reuse.",
+      "path": "Samples~/FrameworkPool"
     }
   ]
 }

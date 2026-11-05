@@ -1,0 +1,1 @@
+<Project><PropertyGroup><NuGetAudit>false</NuGetAudit><FrameworkRoot Condition="'$(FrameworkRoot)' == ''">$(MSBuildThisFileDirectory)../../Framework</FrameworkRoot></PropertyGroup></Project>

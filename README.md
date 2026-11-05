@@ -1,5 +1,7 @@
 # GpuAnimator
 
+3.2.0-preview.1 的[独立包验证与边界](Documentation~/package-validation.md)已补齐；可选 [Framework Pool Sample](Samples~/FrameworkPool/README.md)复用基础池，回收前清除播放状态。
+
 [中文使用文档](Documentation~/index.md) · [API](Documentation~/api.md) · [接入与对象池](Documentation~/integration.md) · [常见问题](Documentation~/troubleshooting.md)
 
 [美术资源规范与交付清单](Documentation~/art-guidelines.md)：模型、骨骼权重、动画、贴图、目录约定和烘焙验收。
